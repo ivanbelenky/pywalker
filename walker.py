@@ -29,9 +29,14 @@ class Tree:
         child.parent = self
     
     def get_all_nodes(self):
-        nodes = [self]
-        for child in self.children:
-            nodes.extend(child.get_all_nodes())
+        stack = [self]
+        nodes = []
+        while stack:
+            node = stack.pop()
+            nodes.append(node)
+            if node.children:
+                stack.extend(node.children)
+
         return nodes
 
     def find_all_leaves(self):
@@ -79,7 +84,7 @@ class Walker:
 
         leaf_to_expand = np.random.choice(selected) 
         
-        dist = 1 
+        dist = 1
 
         new_leaf_value = leaf_to_expand.value + np.random.randint(-dist, dist+1, self.d)
         if not any([all(l.value == new_leaf_value) for l in all_leaves]):
@@ -124,10 +129,12 @@ def random_decider(body, N, E):
 
 def scatter_tree(walker):
     values = [n.value for n in walker.body.get_all_nodes()]
-    _ = plt.scatter([v[0] for v in values], [v[1] for v in values], s=1, c='r')
+    _ = plt.scatter([v[0] for v in values], [v[1] for v in values], 
+        s=1, c='r')
     _ = plt.xticks([])
     _ = plt.yticks([])
     plt.show()
+    
 
 
 def  graph_tree(walker):
@@ -155,3 +162,4 @@ if __name__ == "__main__":
         env.run(until=i*STEPPER)
 
     graph_tree(walker)    
+    scatter_tree(walker)
