@@ -1,12 +1,17 @@
+import sys
 import enum 
-import copy
 from typing import Callable
 
 import numpy as np
+import tqdm
 import matplotlib.pyplot as plt
 import simpy
 
 plt.style.use("dark_background")
+
+
+STEPPER = 100
+
 
 class Tree:
     def __init__(self, value, parent=None, children=None):
@@ -29,16 +34,16 @@ class Tree:
             nodes.extend(child.get_all_nodes())
         return nodes
 
-    def find_all_leaves(self, leaves=None):
-        if leaves is None:
-            leaves = []
-        if not self.children:
-            leaves.append(self)
-        else:
-            for child in self.children:
-                child.find_all_leaves(leaves)
+    def find_all_leaves(self):
+        stack = [self]
+        leaves = []
+        while stack:
+            node = stack.pop()
+            if not node.children:
+                leaves.append(node)
+            else:
+                stack.extend(node.children)
         return leaves
-
 
 class Walker:
     '''
@@ -49,7 +54,7 @@ class Walker:
     is basing his decision in terms what could be interpreted as a state.
     '''
     ACTIONS = enum.Enum('ACTIONS', 'MOVE STAY EXTEND')
-    PARENT_SPLIT_PROBABILITY = 0.00
+    PARENT_SPLIT_PROBABILITY = 0.0
 
     def __init__(self, env: simpy.Environment, decide: Callable, d: int=2, 
         m0: int=10, E0: float=10):
@@ -73,7 +78,9 @@ class Walker:
         selected = all_parents if parent and all_parents else all_leaves
 
         leaf_to_expand = np.random.choice(selected) 
-        dist = 1
+        
+        dist = 1 
+
         new_leaf_value = leaf_to_expand.value + np.random.randint(-dist, dist+1, self.d)
         if not any([all(l.value == new_leaf_value) for l in all_leaves]):
             self.N +=1
@@ -125,26 +132,26 @@ def scatter_tree(walker):
 
 def  graph_tree(walker):
     plt.figure(figsize=(10,10))
-    _graph_tree(walker.body)
+    stack = [walker.body]
+    while stack:
+        node = stack.pop()
+        if node.children:
+            stack.extend(node.children)
+            for child in node.children:
+                nval, cval = node.value, child.value
+                plt.plot([nval[0], cval[0]], [nval[1], cval[1]], 
+                    linewidth=0.1, c='r')
     _ = plt.xticks([])
     _ = plt.yticks([])
+    
     plt.show()
-
-
-def _graph_tree(tree):
-    if not tree.children:
-        return
-    for child in tree.children:
-        tval, cval = tree.value, child.value
-        plt.plot([tval[0], cval[0]], [tval[1], cval[1]], c='r')
-        _graph_tree(child)
-
 
 
 if __name__ == "__main__":
     env = simpy.Environment()
-    walker = Walker(env, random_decider, 3)
+    walker = Walker(env, random_decider, 2)
     env.process(walker.run())
-    env.run(until=1000)
+    for i in tqdm.trange(1, int(sys.argv[1])//STEPPER):
+        env.run(until=i*STEPPER)
 
     graph_tree(walker)    
