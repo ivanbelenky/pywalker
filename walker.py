@@ -189,8 +189,8 @@ class DepthWalker(WalkerBase):
                 delta = (node_to_expand.value-center_of_mass)
                 delta = delta/np.linalg.norm(delta)
                 diffs = np.linalg.norm(self.displacements-delta, axis=1)
-                closest3 = np.argsort(diffs)[:5]
-                delta = self.displacements[np.random.choice(closest3)]
+                closest = np.argsort(diffs)[:4]
+                delta = self.displacements[np.random.choice(closest)]
 
         new_leaf_value = node_to_expand.value + delta
         if not any([all(l.value == new_leaf_value) for l in self.nodes]):
